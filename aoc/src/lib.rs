@@ -8,7 +8,7 @@ pub fn soln(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let syn::ItemFn { attrs: _attrs, vis, sig, block } = item_fn;
     let ident = sig.ident.to_string();
     let stmts = block.stmts;
-    let output = quote!{vterm
+    let output = quote!{
         #vis #sig {
             println!("=== Running ({}) ===", #ident);
             #(#stmts)*
