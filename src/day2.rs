@@ -1,7 +1,7 @@
-use std::io::{self, BufRead};
+use aoc::soln;
 use regex::Regex;
 use std::fs;
-use aoc::soln;
+use std::io::{self, BufRead};
 
 #[soln]
 pub fn day2() {
@@ -35,7 +35,9 @@ pub fn day2() {
                 let pos2 = cap[2].parse::<usize>().unwrap();
                 let c = &cap[3].chars().nth(0).unwrap();
                 let pw = &cap[4];
-                if (&pw.chars().nth(pos1-1).unwrap() == c) ^ (&pw.chars().nth(pos2-1).unwrap() == c) {
+                if (&pw.chars().nth(pos1 - 1).unwrap() == c)
+                    ^ (&pw.chars().nth(pos2 - 1).unwrap() == c)
+                {
                     good_pws += 1;
                 }
             }
