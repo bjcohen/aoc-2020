@@ -20,7 +20,7 @@ fn sum_of_counts_any(s: &str) -> u32 {
             g.chars()
                 .filter(|c| *c != '\n')
                 .collect::<HashSet<_>>()
-                .len()
+                .len() as u32
         })
         .sum()
 }
