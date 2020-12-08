@@ -1,10 +1,11 @@
+use anyhow;
 use aoc::soln;
 use regex::Regex;
 use std::fs;
 use std::io::{self, BufRead};
 
 #[soln]
-pub fn day2() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let file = fs::File::open("input_2.txt")?;
     let lines = io::BufReader::new(file).lines();
     let re = Regex::new(r"(\d+)\-(\d+) (\w): (\w+)").unwrap();

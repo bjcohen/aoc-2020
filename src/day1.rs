@@ -1,10 +1,11 @@
+use anyhow;
 use aoc::soln;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{self, BufRead};
 
 #[soln]
-pub fn day1() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let file = fs::File::open("input_1.txt")?;
     let lines = io::BufReader::new(file).lines();
     let nums: Vec<i32> = lines.map(|l| l.unwrap().parse::<i32>().unwrap()).collect();

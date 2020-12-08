@@ -1,9 +1,10 @@
+use anyhow;
 use aoc::soln;
 use std::fs;
 use std::io::{self, BufRead};
 
 #[soln]
-pub fn day3() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let file = fs::File::open("input_3.txt")?;
     let lines = io::BufReader::new(file).lines();
     let trees: Vec<Vec<bool>> = lines

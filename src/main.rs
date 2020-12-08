@@ -12,13 +12,13 @@ mod day8;
 use anyhow;
 
 fn main() -> anyhow::Result<()> {
-    day1::day1()?;
-    day2::day2()?;
-    day3::day3()?;
-    day4::day4()?;
-    day5::day5()?;
-    day6::day6()?;
-    day7::day7()?;
+    day1::main()?;
+    day2::main()?;
+    day3::main()?;
+    day4::main()?;
+    day5::main()?;
+    day6::main()?;
+    day7::main()?;
     day8::main()?;
     Ok(())
 }

@@ -1,10 +1,13 @@
+#![allow(unused_attributes)]
+#![feature(iterator_fold_self)]
+
+use anyhow;
 use aoc::soln;
 use std::collections::HashSet;
 use std::fs;
-use std::io;
 
 #[soln]
-pub fn day6() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let contents = fs::read_to_string("input_6.txt").unwrap();
     let contents = contents.trim();
     let sum_of_counts_any = sum_of_counts_any(contents);

@@ -1,8 +1,8 @@
+use anyhow;
 use aoc::soln;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
-use std::io;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -99,7 +99,7 @@ impl FromStr for Passport {
 }
 
 #[soln]
-pub fn day4() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let file_contents = fs::read_to_string("input_4.txt")?;
     let passports: Result<Vec<Passport>, _> = file_contents
         .split("\n\n")

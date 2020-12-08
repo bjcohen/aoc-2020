@@ -5,10 +5,14 @@ use std::fs;
 #[soln]
 pub fn main() -> Result<()> {
     let contents = fs::read_to_string("input_8.txt").unwrap();
-    let mut lines: Vec<(&str, &str)> = contents.trim().lines().map(|l| {
-        let mut s = l.split(' ');
-        (s.next().unwrap(), s.next().unwrap())
-    }).collect();
+    let mut lines: Vec<(&str, &str)> = contents
+        .trim()
+        .lines()
+        .map(|l| {
+            let mut s = l.split(' ');
+            (s.next().unwrap(), s.next().unwrap())
+        })
+        .collect();
     part1(&lines)?;
     part2(&mut lines)?;
     Ok(())

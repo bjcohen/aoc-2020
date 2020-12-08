@@ -1,9 +1,9 @@
+use anyhow;
 use aoc::soln;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
-use std::io;
 use std::iter::FromIterator;
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ where
 }
 
 #[soln]
-pub fn day7() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let contents = fs::read_to_string("input_7.txt").unwrap();
     let contents = contents.trim();
     println!("({}) bad colors", part1(&contents));

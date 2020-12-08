@@ -1,3 +1,4 @@
+use anyhow;
 use aoc::soln;
 use std::fs;
 use std::io::{self, BufRead};
@@ -6,7 +7,7 @@ const N_ROW_DESC: usize = 7;
 const N_COL_DESC: usize = 3;
 
 #[soln]
-pub fn day5() -> io::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let file = fs::File::open("input_5.txt")?;
     let lines = io::BufReader::new(file).lines();
     let mut seat_ids: Vec<u32> = lines.map(|l| seat_id(&l.unwrap())).collect();
