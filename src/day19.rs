@@ -1,7 +1,8 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use aoc::soln;
 use std::collections::HashMap;
 use std::fs;
+use std::num::ParseIntError;
 
 #[derive(Debug)]
 enum R {
@@ -18,89 +19,114 @@ pub fn main() -> Result<()> {
     Ok(())
 }
 
-fn parse(rules_str: &str) -> HashMap<i64, R> {
+fn parse(rules_str: &str) -> Result<HashMap<i64, R>> {
     let mut rules: HashMap<i64, R> = HashMap::new();
     for line in rules_str.lines() {
         let s: Vec<&str> = line.split(": ").collect();
-        let n: i64 = s[0].parse().unwrap();
+        let n: i64 = s[0].parse()?;
         if s[1] == "\"a\"" {
             rules.insert(n, R::Term('a'));
         } else if s[1] == "\"b\"" {
             rules.insert(n, R::Term('b'));
         } else if s[1].contains('|') {
             let ps: Vec<&str> = s[1].split(" | ").collect();
-            let l = ps[0].split(' ').map(|i| i.parse().unwrap()).collect();
-            let r = ps[1].split(' ').map(|i| i.parse().unwrap()).collect();
+            let l = ps[0]
+                .split(' ')
+                .map(|i| i.parse())
+                .collect::<Result<Vec<i64>, ParseIntError>>()?;
+            let r = ps[1]
+                .split(' ')
+                .map(|i| i.parse())
+                .collect::<Result<Vec<i64>, ParseIntError>>()?;
             rules.insert(n, R::Or(l, r));
         } else {
-            let rs = s[1].split(' ').map(|i| i.parse().unwrap()).collect();
+            let rs = s[1]
+                .split(' ')
+                .map(|i| i.parse())
+                .collect::<Result<Vec<i64>, ParseIntError>>()?;
             rules.insert(n, R::Concat(rs));
         }
     }
-    rules
+    Ok(rules)
 }
 
 fn part1(contents: &str) -> Result<i64> {
     let split: Vec<&str> = contents.split("\n\n").collect();
-    let rules = parse(split[0]);
+    let rules = parse(split[0])?;
     let n_valid = split[1]
         .lines()
-        .filter(|l| eval1(l, &rules, 0).iter().any(|r| r.is_empty()))
+        .filter(|l| eval1(l, &rules, 0).iter().flatten().any(|r| r.is_empty()))
         .count();
     println!("n_valid={}", n_valid);
     Ok(n_valid as i64)
 }
 
-fn eval1<'a>(line: &'a str, rules: &HashMap<i64, R>, rn: i64) -> Vec<&'a str> {
-    let rule = rules.get(&rn).unwrap();
+fn res_vec_to_vec_res<T>(res_vec: Result<Vec<T>>) -> Vec<Result<T>> {
+    match res_vec {
+        Ok(vec) => vec.into_iter().map(|item| Ok(item)).collect(),
+        Err(e) => vec![Err(e)],
+    }
+}
+
+fn eval1<'a>(line: &'a str, rules: &HashMap<i64, R>, rn: i64) -> Result<Vec<&'a str>> {
+    let rule = rules.get(&rn).ok_or(anyhow!("rule {} didn't exist", rn))?;
     match rule {
         R::Or(l, r) => {
             let mut l_ss = vec![line];
             for t in l {
-                l_ss = l_ss.iter().flat_map(|s| eval1(s, rules, *t)).collect();
+                l_ss = l_ss
+                    .iter()
+                    .flat_map(|s| res_vec_to_vec_res(eval1(s, rules, *t)))
+                    .collect::<Result<Vec<&'a str>>>()?;
                 if l_ss.is_empty() {
                     break;
                 }
             }
             let mut r_ss = vec![line];
             for t in r {
-                r_ss = r_ss.iter().flat_map(|s| eval1(s, rules, *t)).collect();
+                r_ss = r_ss
+                    .iter()
+                    .flat_map(|s| res_vec_to_vec_res(eval1(s, rules, *t)))
+                    .collect::<Result<Vec<&'a str>>>()?;
                 if r_ss.is_empty() {
                     break;
                 }
             }
             l_ss.append(&mut r_ss);
-            l_ss
+            Ok(l_ss)
         }
         R::Concat(ts) => {
             let mut ss = vec![line];
             for t in ts {
-                ss = ss.iter().flat_map(|s| eval1(s, rules, *t)).collect();
+                ss = ss
+                    .iter()
+                    .flat_map(|s| res_vec_to_vec_res(eval1(s, rules, *t)))
+                    .collect::<Result<Vec<&'a str>>>()?;
                 if ss.is_empty() {
                     break;
                 }
             }
-            ss
+            Ok(ss)
         }
         R::Term(c) => {
-            let ss = if line.len() > 0 && line.chars().next().unwrap() == *c {
+            let ss = if line.chars().next() == Some(*c) {
                 vec![&line[1..]]
             } else {
                 vec![]
             };
-            ss
+            Ok(ss)
         }
     }
 }
 
 fn part2(contents: &str) -> Result<i64> {
     let split: Vec<&str> = contents.split("\n\n").collect();
-    let mut rules = parse(split[0]);
+    let mut rules = parse(split[0])?;
     rules.insert(8, R::Or(vec![42], vec![42, 8]));
     rules.insert(11, R::Or(vec![42, 31], vec![42, 11, 31]));
     let n_valid = split[1]
         .lines()
-        .filter(|l| eval1(l, &rules, 0).iter().any(|r| r.is_empty()))
+        .filter(|l| eval1(l, &rules, 0).iter().flatten().any(|r| r.is_empty()))
         .count();
     println!("n_valid={}", n_valid);
     Ok(n_valid as i64)
@@ -111,7 +137,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_part1() {
+    fn test_part1() -> Result<()> {
         assert_eq!(
             2,
             part1(
@@ -127,13 +153,13 @@ bababa
 abbbab
 aaabbb
 aaaabbb"#
-            )
-            .unwrap()
+            )?
         );
+        Ok(())
     }
 
     #[test]
-    fn test_part2() {
+    fn test_part2() -> Result<()> {
         assert_eq!(
             12,
             part2(
@@ -184,8 +210,8 @@ aaaabbaaaabbaaa
 aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
 babaaabbbaaabaababbaabababaaab
 aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"#
-            )
-            .unwrap()
+            )?
         );
+        Ok(())
     }
 }
