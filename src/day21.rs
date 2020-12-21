@@ -1,42 +1,30 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use aoc::soln;
-use regex::Regex;
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 
 #[soln]
 pub fn main() -> Result<()> {
     let contents = fs::read_to_string("input_21.txt")?;
-    part1(&contents)?;
-    part2(&contents)?;
+    let (ingredients, possible_allergen_ingredients) = parse(&contents)?;
+    part1(&ingredients, &possible_allergen_ingredients)?;
+    part2(&possible_allergen_ingredients)?;
     Ok(())
 }
 
-fn parse(
-    contents: &str,
-) -> Result<(
-    Vec<(Vec<String>, Vec<String>)>,
-    HashMap<String, HashSet<String>>,
-)> {
-    let re = Regex::new(r"(.*)*\(contains (.*)\)").unwrap();
-    let ingredients: Vec<(Vec<String>, Vec<String>)> = contents
+fn parse(contents: &str) -> Result<(Vec<(Vec<&str>, Vec<&str>)>, HashMap<&str, HashSet<&str>>)> {
+    let ingredients: Vec<(Vec<&str>, Vec<&str>)> = contents
         .lines()
         .map(|l| {
-            let caps = re.captures(l).unwrap();
+            let caps: Vec<&str> = l.trim_end_matches(')').split(" (contains ").collect();
             (
-                caps[1]
-                    .trim()
-                    .split(' ')
-                    .map(|i| i.to_string())
-                    .collect::<Vec<String>>(),
-                caps[2]
-                    .split(", ")
-                    .map(|i| i.to_string())
-                    .collect::<Vec<String>>(),
+                caps[0].split(' ').collect::<Vec<&str>>(),
+                caps[1].split(", ").collect::<Vec<&str>>(),
             )
         })
         .collect();
-    let possible_allergen_ingredients: HashMap<String, HashSet<String>> =
+    let possible_allergen_ingredients: HashMap<&str, HashSet<&str>> =
         ingredients
             .iter()
             .fold(HashMap::new(), |mut acc, (ingredients, allergens)| {
@@ -44,32 +32,34 @@ fn parse(
                     let set = ingredients
                         .iter()
                         .map(|s| s.clone())
-                        .collect::<HashSet<String>>();
+                        .collect::<HashSet<&str>>();
                     let e = acc.entry(a.clone()).or_insert(set.clone());
                     *e = e
                         .intersection(&set)
                         .map(|s| s.clone())
-                        .collect::<HashSet<String>>();
+                        .collect::<HashSet<&str>>();
                 }
                 acc
             });
     Ok((ingredients, possible_allergen_ingredients))
 }
 
-fn part1(contents: &str) -> Result<i64> {
-    let (ingredients, possible_allergen_ingredients) = parse(contents)?;
-    let possible_ingredients: HashSet<String> = possible_allergen_ingredients
+fn part1(
+    ingredients: &Vec<(Vec<&str>, Vec<&str>)>,
+    possible_allergen_ingredients: &HashMap<&str, HashSet<&str>>,
+) -> Result<i64> {
+    let possible_ingredients: HashSet<&str> = possible_allergen_ingredients
         .values()
-        .flat_map(|is| is.iter().map(|i| i.clone()))
+        .flat_map(|is| is.iter().map(|i| *i))
         .collect();
-    let excluded_ingredients: Vec<String> = ingredients
-        .iter()
-        .flat_map(|(is, _as)| is.iter())
+    let excluded_ingredients: Vec<&str> = ingredients
+        .into_iter()
+        .flat_map(|(is, _as)| is.into_iter())
         .filter_map(|i| {
             if possible_ingredients.contains(i) {
                 None
             } else {
-                Some(i.clone())
+                Some(*i)
             }
         })
         .collect();
@@ -78,29 +68,31 @@ fn part1(contents: &str) -> Result<i64> {
     Ok(num_excluded_ingredients)
 }
 
-fn part2(contents: &str) -> Result<String> {
-    let (_ingredients, possible_allergen_ingredients) = parse(contents)?;
-    let mut i = possible_allergen_ingredients.clone();
-    let mut pairs: Vec<(String, String)> = vec![];
-    while i.len() > 0 {
-        let pairs_: Vec<(String, String)> = i
-            .iter()
-            .filter(|(_ing, alls)| alls.len() == 1)
-            .map(|(ing, alls)| (ing.clone(), alls.iter().next().unwrap().clone()))
-            .collect();
-        pairs.extend(pairs_.clone());
-        for (ing, all) in pairs_ {
-            i.remove(&ing);
-            for (_, v) in i.iter_mut() {
-                v.remove(&all);
+fn part2(possible_allergen_ingredients: &HashMap<&str, HashSet<&str>>) -> Result<String> {
+    let mut ingredient_to_allergen: HashMap<&str, &str> = HashMap::new();
+    while possible_allergen_ingredients.len() != ingredient_to_allergen.len() {
+        for (all, ings) in possible_allergen_ingredients {
+            if ings
+                .into_iter()
+                .filter(|ing| !ingredient_to_allergen.contains_key(*ing))
+                .count()
+                == 1
+            {
+                ingredient_to_allergen.insert(
+                    ings.into_iter()
+                        .filter(|ing| !ingredient_to_allergen.contains_key(*ing))
+                        .next()
+                        .ok_or(anyhow!("couldn't find single ingredient"))?,
+                    all,
+                );
             }
         }
     }
-    pairs.sort_by(|(a1, _), (a2, _)| a1.cmp(a2));
-    let ings_sorted = pairs
-        .into_iter()
-        .map(|(_, i)| i)
-        .collect::<Vec<String>>()
+    let ings_sorted = ingredient_to_allergen
+        .iter()
+        .sorted_by(|(_i1, a1), (_i2, a2)| a1.cmp(a2))
+        .map(|(i, _a)| *i)
+        .collect::<Vec<&str>>()
         .join(",");
     println!("{}", ings_sorted);
     Ok(ings_sorted)
@@ -112,28 +104,27 @@ mod tests {
 
     #[test]
     fn test_part1() -> Result<()> {
-        assert_eq!(
-            5,
-            part1(
-                "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
+        let (ingredients, possible_allergen_ingredients) = parse(
+            "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
-sqjhc mxmxvkd sbzzf (contains fish)"
-            )?
-        );
+sqjhc mxmxvkd sbzzf (contains fish)",
+        )?;
+        assert_eq!(5, part1(&ingredients, &possible_allergen_ingredients)?);
         Ok(())
     }
 
     #[test]
     fn test_part2() -> Result<()> {
-        assert_eq!(
-            "mxmxvkd,sqjhc,fvjkl",
-            part2(
-                "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
+        let (_ingredients, possible_allergen_ingredients) = parse(
+            "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
-sqjhc mxmxvkd sbzzf (contains fish)"
-            )?
+sqjhc mxmxvkd sbzzf (contains fish)",
+        )?;
+        assert_eq!(
+            "mxmxvkd,sqjhc,fvjkl",
+            part2(&possible_allergen_ingredients)?
         );
         Ok(())
     }
