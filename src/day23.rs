@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
 use aoc::soln;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::rc::Rc;
-use std::collections::HashMap;
 
 #[soln]
 pub fn main() -> Result<()> {
@@ -130,7 +130,9 @@ fn run_cups_ll(cups: &Vec<i64>, n_moves: usize) -> Result<Vec<i64>> {
                 dest_c = max_c;
             }
         }
-        let dest = map.get(&dest_c).ok_or(anyhow!("couldn't find dest in map"))?;
+        let dest = map
+            .get(&dest_c)
+            .ok_or(anyhow!("couldn't find dest in map"))?;
         let mut tmp = dest.clone();
         for cup in c0 {
             let new_node = Rc::new(RefCell::new(Node {
@@ -193,6 +195,19 @@ mod tests {
     fn test_part1() -> Result<()> {
         let input = vec![3, 8, 9, 1, 2, 5, 4, 6, 7];
         assert_eq!("67384529", part1(&input)?);
+        Ok(())
+    }
+
+    #[test]
+    fn test_array_ll_equal() -> Result<()> {
+        let input = vec![3, 8, 9, 1, 2, 5, 4, 6, 7];
+        let mut array_result = run_cups_array(&input, 100)?;
+        let ll_result = run_cups_ll(&input, 100)?;
+        assert_eq!(array_result.len(), ll_result.len());
+        assert!((0..array_result.len()).any(|_| {
+            array_result.rotate_left(1);
+            array_result == ll_result
+        }));
         Ok(())
     }
 
