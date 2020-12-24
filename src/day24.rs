@@ -84,25 +84,24 @@ fn part2(contents: &str) -> Result<usize> {
                     *acc.entry(coords).or_insert(0) += 1;
                     acc
                 });
-        let is_black_: HashSet<(i64, i64)> = num_adjacent
+        is_black = num_adjacent
             .iter()
-            .filter_map(|(coords, count)| {
-                if is_black.get(coords).is_some() {
-                    if *count == 0 || *count > 2 {
+            .filter_map(|(&coords, &count)| {
+                if is_black.contains(&coords) {
+                    if count == 0 || count > 2 {
                         None
                     } else {
-                        Some(*coords)
+                        Some(coords)
                     }
                 } else {
-                    if *count == 2 {
-                        Some(*coords)
+                    if count == 2 {
+                        Some(coords)
                     } else {
                         None
                     }
                 }
             })
             .collect();
-        is_black = is_black_;
     }
     let num_black = is_black.len();
     println!("num_black={}", num_black);
