@@ -3,13 +3,13 @@ use aoc::soln;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{self, BufRead};
+use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 
 #[soln]
 pub fn main() -> Result<()> {
     let file = fs::File::open("input_1.txt")?;
-    let lines = io::BufReader::new(file).lines();
+    let lines = BufReader::new(file).lines();
     let nums = lines
         .map(|l| {
             l.map_err(Error::new)
