@@ -1,47 +1,49 @@
-use anyhow;
+use anyhow::{Error, Result};
 use aoc::soln;
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{self, BufRead};
+use std::iter::FromIterator;
 
 #[soln]
-pub fn main() -> anyhow::Result<()> {
+pub fn main() -> Result<()> {
     let file = fs::File::open("input_1.txt")?;
     let lines = io::BufReader::new(file).lines();
-    let nums: Vec<i32> = lines.map(|l| l.unwrap().parse::<i32>().unwrap()).collect();
-    let mut nums_set = HashSet::new();
-    for num in nums.clone() {
-        nums_set.insert(num);
-    }
-    let sum = 2020;
-    for num in nums.clone() {
-        if nums_set.contains(&(sum - num)) {
-            println!(
-                "Found ({}, {}), which multiply to ({}).",
-                num,
-                2020 - num,
-                num * (2020 - num)
-            );
-            break;
-        }
-    }
-    let mut num_sums_map: HashMap<i32, (i32, i32)> = HashMap::new();
-    for num1 in nums.clone() {
-        for num2 in nums.clone() {
-            num_sums_map.insert(num1 + num2, (num1, num2));
-        }
-    }
-    for num in nums.clone() {
-        if let Some((num1, num2)) = num_sums_map.get(&(2020 - num)) {
-            println!(
-                "Found ({}, {}, {}), which multiply to ({}).",
-                num,
-                num1,
-                num2,
-                num * num1 * num2
-            );
-            break;
-        }
-    }
+    let nums = lines
+        .map(|l| {
+            l.map_err(Error::new)
+                .and_then(|l| l.parse::<i32>().map_err(Error::new))
+        })
+        .collect::<Result<Vec<i32>, _>>()?;
+    let nums_set: HashSet<&i32> = HashSet::from_iter(&nums);
+    const SUM: i32 = 2020;
+    let num = nums
+        .iter()
+        .filter(|n| nums_set.contains(&(SUM - *n)))
+        .next()
+        .ok_or(Error::msg("Didn't find matching num"))?;
+    println!(
+        "Found ({}, {}), which multiply to ({}).",
+        num,
+        SUM - num,
+        num * (SUM - num)
+    );
+    let num_sums_map: HashMap<i32, (i32, i32)> = HashMap::from_iter(
+        nums.iter()
+            .cartesian_product(&nums)
+            .map(|(n1, n2)| (n1 + n2, (*n1, *n2))),
+    );
+    let (num, num1, num2) = nums
+        .iter()
+        .find_map(|n| num_sums_map.get(&(SUM - *n)).map(|(n1, n2)| (*n, *n1, *n2)))
+        .ok_or(Error::msg("Didn't find matching num"))?;
+    println!(
+        "Found ({}, {}, {}), which multiply to ({}).",
+        num,
+        num1,
+        num2,
+        num * num1 * num2
+    );
     Ok(())
 }
